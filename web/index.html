@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>搜索引擎</title>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+    <div id="choice" class="container">
+        <button id="bsearch" class="btn btn-primary">搜索文字图片</button>
+        <button id="bPhotoSearch" class="btn btn-success">以图搜图</button>
+    </div>
+    <div id="hint">
+        <span id="hinttext"></span>
+        <button type="button" class="btn btn-primary back">确定</button>
+    </div>
+    <div id="add">
+        <form id="form1" role="form">
+            <div class="form-group">
+                <label>
+                    <input id="input_search" name="query" placeholder="搜索内容"/>
+                </label>
+                <button type="button" class="btn btn-primary" id="search">搜索</button>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input id="input_filter" name="filterwords" placeholder="屏蔽词(,分割)"/>
+                </label>
+            </div>
+        </form>
+    </div>
+    <div id="queries">
+        <ol id="queryol">
+        </ol>
+    </div>
+    <div id="relateSearch">
+        <label>&nbsp&nbsp&nbsp&nbsp&nbsp相关搜索</label>
+        <ol id="relateol">
+        </ol>
+    </div>
+    <div id="pagination">
+        <ul id="pageul">
+        </ul>
+    </div>
+    <div id="querydetail">
+        <ul id="uniqueul">
+        </ul>
+        <button id="backtoidx" type="button" class="btn btn-primary">返回</button>
+    </div>
+</body>
+<script>
+    const divShow = divid => {
+        $("div").hide()
+        $(`#${divid}`).show()
+    }
+
+    const msgHint = text => {
+        $("#hinttext").html(text);
+        divShow("hint")
+    }
+
+    const showAll = (res, queryWords, filterWords) => {
+        $("#queries").show()
+        $("#relateSearch").show()
+        $("#pagination").show()
+        $("#relateol").empty()
+        $("#queryol").empty()
+        $("#pageul").empty()
+        let total = res.data.documents
+        let relates = res.data.relatedSearch
+        let pageCount = res.data.pageCount
+        //console.log(queryWords)
+        //console.log(filterWords)
+        //res = JSON.parse(res.data.documents)
+        for (let i in total)
+        {
+            //let cnt = 0
+            //console.log(res.data.documents[i]["originalText"])
+            s = total[i]["originalText"]
+            u = total[i]["url"]
+            $("#queryol").append(
+                `<li><div class="item" id="item-${i}">${s}  <button type="button" id="${i}"><img src="${u}" alt="error" width="100" height="100"></div></li>`
+            )
+            /*if (res[i]["enabled"] == false) {
+                $(`#item-${i}`).css("opacity", "0.5");
+            }*/
+            $(`#${i}`).click(e => {
+                e.preventDefault()
+                showDetailPage(res, total[i]["url"])
+            })
+        }
+        for (let j in relates)
+        {
+            r = relates[j]
+            let ind = parseInt(j) + parseInt(total.length)
+            $("#relateol").append(
+                `<li><div class="item" id="item-${ind}"><button type="button" id="${ind}">${r}</div></li>`
+            )
+            $(`#${ind}`).click(e => {
+                e.preventDefault()
+                $("#input_search").empty()
+                $("#input_search").val(relates[ind - total.length])
+            })
+        }
+        for (let k = 0 ; k < pageCount ; k++)
+        {
+            let temp = k + total.length + relates.length
+            let pg = k + 1
+            $("#pageul").append(
+                `<li style="float: left;list-style-type:none"><div class="item" id="item-${temp}"><button type="button" id="${temp}">${pg}</div></li>`
+            )
+            $(`#${temp}`).click(e => {
+                e.preventDefault()
+                showSelectedPage(queryWords, filterWords, pg)
+            })
+        }
+    }
+    const showDetailPage = (res, url) => {
+        divShow("querydetail")
+            $("#uniqueul").append(`<li><img src="${url}" alt="error" width="1000" height="1000"></li>`)
+        $("#backtoidx").click(e => {
+            e.preventDefault()
+            $("#uniqueul").empty()
+            $('#querydetail .btn').unbind();
+            divShow("queries")
+            $(".form-group,.checkbox,.form-check,#add").show()
+            showAll(res)
+        })
+    }
+    const showSelectedPage = (word, filter, pg) => {
+        let data = {}
+        data["filterword"] = filter
+        data["query"] = word
+        data["page"] = parseInt(pg)
+        data["limit"] = 10
+        data["order"] = "desc"
+        //console.log(JSON.stringify(data))
+        $.ajax({
+            type: 'POST',
+            url: "/search",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            dataType: 'json',
+            success: (res) => showAll(res, word, filter),
+            error: (XMLHttpRequest, textStatus, errorThrown) => {
+                console.log(XMLHttpRequest, textStatus, errorThrown)
+                alert("请求失败,请您重新尝试")
+            }
+        })
+    }
+    $(document).ready(() => {
+        divShow("choice")
+
+        $("#bPhotoSearch").click(() => {
+            divShow("query")
+            $.ajax({
+                type: 'get',
+                url: '/query_all_rules',
+                success: (res) => showAll(res),
+                error: () => msgHint("请求失败")
+            })
+        })
+
+        $("#bsearch").click(() => {
+            $("div").hide()
+            $(".form-group,.checkbox,.form-check,#add").show()
+        })
+
+        $("#search").click(function () {
+            // var data = new FormData($("#form1")[0]);
+            let data = {}
+            $(".form-group input").each((id, e) => {
+                let nm = $(e).attr("name")
+                if (nm == "filterwords") {
+                    let id_lst = e.value
+                    let lst = id_lst.split(',')
+                    data["filterword"] = lst
+                } else {
+                    data[nm] = e.value
+                }
+                //\ console.log($(e).attr("name") + " " + e.value)
+                //console.log($(e).attr("name") + " " + data[nm])
+            })
+            //if (data["platform"].toLowerCase() == "ios") {
+                //data["min_os_api"] = 0
+                //data["max_os_api"] = 0
+            //}
+            data["page"] = 1
+            data["limit"] = 10
+            data["order"] = "desc"
+            // $("input").forEach(e => {
+            //     console.log(e)
+            // })
+            // console.log(document.forms[0])
+            // $.post("/create_rule", data, (e)=>{})
+             //console.log(JSON.stringify(data))
+            $.ajax({
+                type: 'POST',
+                url: "/search",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                dataType: 'json',
+                success: (res) => showAll(res, data["query"], data["filterword"]),
+                error: (XMLHttpRequest, textStatus, errorThrown) => {
+                    console.log(XMLHttpRequest, textStatus, errorThrown)
+                    alert("请求失败,请您重新尝试")
+                }
+            })
+        })
+    });
+</script>
+
+<style>
+    #add {
+        margin-top : 3em;
+        margin-left : 10em;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group {
+        width : 80%;
+        position: relative;
+    }
+
+    .form-group  input{
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 900px;
+    }
+    .form-group  button{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 100px;
+    }
+
+    #bsearch {
+        position: fixed;
+        left: 400px;
+        top: 200px;
+    }
+
+    #bPhotoSearch {
+        position: fixed;
+        right: 400px;
+        top: 200px;
+    }
+</style>

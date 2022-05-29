@@ -14,7 +14,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
+func GetHTML(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
+}
 func main() {
 	// 启用一个简单的路由 实现简单的查询
 
@@ -23,7 +25,8 @@ func main() {
 	//初始化路由
 	r := gin.Default()
 	r.Use(gin.Logger())
-
+	r.LoadHTMLGlob("./web/index.html")
+	r.LoadHTMLFiles("./web/index.html")
 	// 初始化引擎
 	wordTokenizer := words.NewTokenizer("./searcher/words/data/dictionary.txt")
 	var engine = &searcher.Engine{
@@ -42,7 +45,7 @@ func main() {
 	}
 
 	initWukong(webSearch)
-
+	r.GET("/index", GetHTML)
 	r.POST("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": "引擎在线",
