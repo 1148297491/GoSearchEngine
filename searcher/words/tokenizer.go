@@ -52,11 +52,13 @@ func (t *Tokenizer) Cut(text string, filterWords ...[]string) []string {
 		//当采用精准分词模式返回其分词结果
 		resultChan = t.seg.Cut(text, true)
 		for {
-			w, ok := <-resultChan
+			word, ok := <-resultChan
 			if !ok {
 				break
 			}
-			wordsSlice = append(wordsSlice, w)
+			if _, ok := stopWordsMap[word]; !ok {
+				wordsSlice = append(wordsSlice, word)
+			}
 		}
 		return wordsSlice
 	}
@@ -88,7 +90,12 @@ func (t *Tokenizer) Cut(text string, filterWords ...[]string) []string {
 		}
 
 		// 未存在或者重复的词语放进返回结果列表
-		wordsSlice = append(wordsSlice, word)
+		if _, ok := stopWordsMap[word]; !ok {
+			wordsSlice = append(wordsSlice, word)
+			/*if word == "是" {
+				fmt.Println(stopWordsMap["是"])
+			}*/
+		}
 	}
 
 	return wordsSlice

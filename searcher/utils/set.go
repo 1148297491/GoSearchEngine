@@ -22,7 +22,7 @@ func (s Set) DeleteKey(key interface{}) {
 
 func DeleteDuplicatedWord(words []string) []string {
 	wordSet := make(Set)
-	var res []string = make([]string, 0, len(words)/2)
+	var res []string = make([]string, 0, len(words))
 	for _, word := range words {
 		if wordSet.IsExist(word) || word == "" {
 			continue

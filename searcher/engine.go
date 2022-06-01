@@ -482,6 +482,29 @@ func (e *Engine) getResult(item model.SliceItem, doc *model.ResponseDoc, request
 
 }
 
+/*
+wordListwg := &sync.WaitGroup{}
+	wordList := e.Tokenizer.Cut(fliteWord, []string{"0"})
+	wordListwg.Add(len(wordList))
+	for _, word := range wordList {
+		go func() {
+			defer wordListwg.Done()
+			shard := e.getShardByWord(word)
+			//读取id：首先获取索引相关的levelDB,然后获取id列表
+			invertedIndexStorage := e.invertedIndexStorages[shard]
+			key := []byte(word)
+
+			buf, find := invertedIndexStorage.Get(key)
+			if find {
+				ids := make([]uint32, 0)
+				//解码
+				utils.Decoder(buf, &ids)
+				fastSort.Add(&ids) // 管道
+			}
+		}()
+	}
+	wordListwg.Wait()
+*/
 func (e *Engine) processKeySearch(word string, fastSort *sorts.FastSort, wg *sync.WaitGroup, base int) {
 	defer wg.Done()
 
