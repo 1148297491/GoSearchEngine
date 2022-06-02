@@ -452,8 +452,8 @@ func (e *Engine) getFinalSearchRes(fastSort *sorts.FastSort, request *model.Sear
 		result.Documents = make([]model.ResponseDoc, 1)
 		result.Documents[0] = model.ResponseDoc{
 			Score:         -1,
-			HighlightText: fmt.Sprintf("请求页码{%d}不在有效页码内{%d}, 没有更多内容了", request.Page, result.PageCount),
-			OriginalText:  fmt.Sprintf("请求页码{%d}不在有效页码内{%d}, 没有更多内容了", request.Page, result.PageCount),
+			HighlightText: "*没有更多内容了*",
+			OriginalText:  "没有更多内容了",
 		}
 		return
 	}
