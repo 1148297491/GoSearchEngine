@@ -27,7 +27,7 @@ func JoinWords(str string, trie *Trie, tokenizer *words.Tokenizer) {
 }
 
 func GetRelatedWords(str string, trie *Trie, tokenizer *words.Tokenizer) []string {
-	inputString := tokenizer.Cut(str, []string{"0"}) //使用精准分词
+	inputString := tokenizer.Cut(str, true) //使用精准分词
 	existString := make(map[uint32]bool)
 	q := new(Queue) //初始化队列
 	q.Init()

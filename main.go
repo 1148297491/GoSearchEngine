@@ -18,6 +18,7 @@ import (
 func GetHTML(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
 }
+
 func main() {
 	// 启用一个简单的路由 实现简单的查询
 
@@ -30,7 +31,7 @@ func main() {
 	r.LoadHTMLFiles("./web/index.html")
 	// 初始化引擎
 	wordTokenizer := words.NewTokenizer("./searcher/words/data/dictionary.txt")
-	words.NewStopWords("./searcher/words/data/stopWordsDict.txt") //初始化停顿词map
+
 	var engine = &searcher.Engine{
 		IndexPath: "../tests/indexTest/test2", // 索引文件路径
 		Tokenizer: wordTokenizer,              //定义分词器

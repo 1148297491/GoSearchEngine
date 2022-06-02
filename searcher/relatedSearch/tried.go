@@ -56,7 +56,7 @@ func (t *Trie) ConsumeChannel() {
 
 // 往 Trie 树中插入一个多关键字句子
 func (t *Trie) Insert(text string) {
-	words := t.trieTokenizer.Cut(text, []string{"0"})
+	words := t.trieTokenizer.Cut(text, true)
 	node := t.root               // 获取根节点
 	for _, word := range words { // 将该句子中的每个关键词以此放入前缀树
 		code := utils.StringToInt(word)
@@ -88,6 +88,7 @@ func (t *Trie) Find(words []string) bool {
 		// 否则继续往后遍历
 		node = value
 	}
+
 	if node.IsEnding == false {
 		return false // 不能完全匹配，只是前缀
 	}

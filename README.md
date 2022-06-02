@@ -32,5 +32,5 @@ go run ./main.go
 
 ## POST请求示例
 ```
-curl -H "Content-Type: application/json" -X POST -d '{"query":"番茄", "order":"", "page":1, "limit":1000, "filterwords":"鸡蛋"}' "127.0.0.1:9633/search"
+curl -H "Content-Type: application/json" -X POST -d '{"query":"番茄", "order":"", "page":1, "limit":1000, "filterword":["鸡蛋"]}' "127.0.0.1:9633/search"
 ```

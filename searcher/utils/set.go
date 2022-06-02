@@ -19,17 +19,3 @@ func (s Set) IsExist(key interface{}) bool {
 func (s Set) DeleteKey(key interface{}) {
 	delete(s, key)
 }
-
-func DeleteDuplicatedWord(words []string) []string {
-	wordSet := make(Set)
-	var res []string = make([]string, 0, len(words))
-	for _, word := range words {
-		if wordSet.IsExist(word) || word == "" {
-			continue
-		}
-
-		res = append(res, word)
-	}
-
-	return res
-}

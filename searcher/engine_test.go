@@ -1,15 +1,16 @@
-package tests
+package searcher
 
 import (
 	"encoding/csv"
 	"fmt"
-	"gofound/searcher"
 	"gofound/searcher/model"
 	"gofound/searcher/words"
 	"io"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/go-playground/assert/v2"
 )
 
 func TestEngineIndex(t *testing.T) {
@@ -18,7 +19,7 @@ func TestEngineIndex(t *testing.T) {
 	tokenizer := words.NewTokenizer("../searcher/words/data/dictionary.txt")
 
 	// 创建引擎
-	var engine = &searcher.Engine{
+	var engine = &Engine{
 		IndexPath: "../tests/indexTest/test2", // 索引文件路径
 		Tokenizer: tokenizer,
 	}
@@ -138,4 +139,23 @@ func TestReadCsv(t *testing.T) {
 		fmt.Printf("%T\n", csvLine)
 		fmt.Println(csvLine)
 	}
+}
+
+func TestFilterWords(t *testing.T) {
+	tokenizer := words.NewTokenizer("../searcher/words/data/dictionary.txt")
+
+	// 创建引擎
+	var engine = &Engine{
+		IndexPath: "../tests/indexTest/test2", // 索引文件路径
+		Tokenizer: tokenizer,
+	}
+
+	option := engine.GetOptions()
+
+	// 引擎一直存在索引实体消费者协程
+	engine.InitOption(option)
+
+	var filterWords = []string{"深圳"}
+	query := engine.deleteFilterWordsFromQuery(filterWords, "深圳北站")
+	assert.Equal(t, query, "北站")
 }
