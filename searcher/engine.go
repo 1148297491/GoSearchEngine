@@ -340,9 +340,9 @@ func (e *Engine) MultiSearch(request *model.SearchRequest) *model.SearchResult {
 	// 首先需要对过滤词进行去重
 	filterWords := e.DeleteDuplicatedWordAndCut(request.FilterWords)
 
-	query := e.deleteFilterWordsFromQuery(filterWords, request.Query)
+	// query := e.deleteFilterWordsFromQuery(filterWords, request.Query)
 
-	words := e.Tokenizer.Cut(query) // 切分搜索语句
+	words := e.Tokenizer.Cut(request.Query, filterWords) // 切分搜索语句
 
 	totalTime := float64(0)
 

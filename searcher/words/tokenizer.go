@@ -133,7 +133,6 @@ func (t *Tokenizer) cutWithfilterWords(text string, filterWords []string) []stri
 
 		// 过滤词中存在
 		if _, ok := filterWordsMap[word]; ok {
-			filterWords[filterWordsMap[word]] = ""
 			continue
 		}
 
