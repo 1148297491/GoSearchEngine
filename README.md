@@ -34,3 +34,18 @@ go run ./main.go
 ```
 curl -H "Content-Type: application/json" -X POST -d '{"query":"番茄", "order":"", "page":1, "limit":1000, "filterword":["鸡蛋"]}' "127.0.0.1:9633/search"
 ```
+
+
+## 以图搜图部分：
+下载这里面的数据文件
+链接：https://pan.baidu.com/s/1e_8G4ou_9Dv-Jvshlxddhw 
+提取码：1612
+
+安装python3.8，pytorch，faiss1.7.2  (pip --default-time=1000 install -i https://pypi.tuna.tsinghua.edu.cn/simple faiss-cpu==1.7.2)，之后修改findGraph/flask_app.py中app.config['UPLOAD_FOLDER']
+和findGraph/predict.py中数据文件的路径
+```
+index = faiss.read_index('index_file.index')
+with open('wukong_urls.txt', 'r', encoding='utf-8') as f:
+    urlsTotal = [row.strip() for row in f.readlines()]
+```
+之后运行flask_app.py即可

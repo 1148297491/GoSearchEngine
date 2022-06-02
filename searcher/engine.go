@@ -47,8 +47,8 @@ type Option struct {
 }
 
 const (
-	PreTag  = "*" //定义返回结果高亮的前缀
-	PostTag = "*" //定义返回结果高亮的后缀
+	PreTag  = "<mark>" //定义返回结果高亮的前缀
+	PostTag = "</mark>" //定义返回结果高亮的后缀
 )
 
 // Init 初始化索引引擎（对一个具体的文档进行初始化）
@@ -452,7 +452,7 @@ func (e *Engine) getFinalSearchRes(fastSort *sorts.FastSort, request *model.Sear
 		result.Documents = make([]model.ResponseDoc, 1)
 		result.Documents[0] = model.ResponseDoc{
 			Score:         -1,
-			HighlightText: "*没有更多内容了*",
+			HighlightText: "<mark>没有更多内容了</mark>",
 			OriginalText:  "没有更多内容了",
 		}
 		return
