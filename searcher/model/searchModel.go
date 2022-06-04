@@ -67,3 +67,9 @@ type SearchResult struct {
 	Documents     []ResponseDoc `json:"documents,omitempty"`     //文档
 	RelatedSearch []string      `json:"relatedSearch,omitempty"` // 相关搜素
 }
+
+type LevelDBContext struct {
+	Key    []byte
+	Value  []byte
+	KvType uint32 //0表示倒排1表示正排2表示文档仓
+}

@@ -31,7 +31,7 @@ func TestEngineIndex(t *testing.T) {
 
 	// 独取目标文件，创建索引实体
 	// 独取cvs文件
-	openfile, err := os.Open("../wukong50k.csv")
+	openfile, err := os.Open("../wukongtest.csv")
 
 	if err != nil {
 		log.Printf("打开wukong50k文件失败, err=[%v]", err)
@@ -124,7 +124,7 @@ func TestEngineIndex(t *testing.T) {
 }
 
 func TestReadCsv(t *testing.T) {
-	openfile, err := os.Open("../wukong50k.csv")
+	openfile, err := os.Open("../wukongtest.csv")
 
 	if err != nil {
 		log.Printf("打开wukong50k文件失败, err=[%v]", err)

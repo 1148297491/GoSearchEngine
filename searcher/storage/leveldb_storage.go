@@ -84,3 +84,7 @@ func (s *LeveldbStorage) Count() int64 {
 	iter.Release()
 	return count
 }
+
+func (s *LeveldbStorage) GetDb() *leveldb.DB {
+	return s.db
+}

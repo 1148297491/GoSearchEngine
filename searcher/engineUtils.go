@@ -5,15 +5,12 @@ package searcher
 */
 
 import (
-	"fmt"
 	"gofound/searcher/storage"
 	"gofound/searcher/utils"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
-
-	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 // DeleteDuplicatedWordAndCut 对过滤单词进行进一步分词并进行去重 保证和搜索语句分词结果一致
@@ -76,6 +73,7 @@ func (e *Engine) GetDocById(id uint32) []byte {
 	return nil
 }
 
+/*
 // RemoveIndex 根据ID移除索引
 func (e *Engine) RemoveIndex(id uint32) error {
 	//移除
@@ -113,6 +111,13 @@ func (e *Engine) RemoveIndex(id uint32) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+*/
+func (e *Engine) RemoveIndex(id uint32) error {
+	e.Lock()
+	defer e.Unlock()
+	e.DeleteSet.Add(id)
 	return nil
 }
 

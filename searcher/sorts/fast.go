@@ -60,9 +60,9 @@ type FastSort struct {
 	Order string //排序方式
 }
 
-func (f *FastSort) Add(ids *[]uint32) {
+func (f *FastSort) Add(ids *[]uint32, deleteSet utils.Set) {
 	for _, id := range *ids {
-		if f.FilterIdxSet.IsExist(id) {
+		if f.FilterIdxSet.IsExist(id) && !deleteSet.IsExist(id) {
 			continue
 		}
 		f.DataChannel <- id

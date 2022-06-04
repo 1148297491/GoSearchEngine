@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
 	"gofound/searcher"
 	"gofound/searcher/model"
 	"gofound/searcher/words"
@@ -11,8 +12,10 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync"
 
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron"
 )
 
 func GetHTML(c *gin.Context) {
@@ -33,7 +36,7 @@ func main() {
 	wordTokenizer := words.NewTokenizer("./searcher/words/data/dictionary.txt")
 
 	var engine = &searcher.Engine{
-		IndexPath: "../tests/indexTest/test2", // 索引文件路径
+		IndexPath: "../tests/indexTest/test0", // 索引文件路径
 		Tokenizer: wordTokenizer,              //定义分词器
 	}
 
@@ -48,6 +51,28 @@ func main() {
 	}
 
 	initWukong(webSearch)
+	counts := 0
+	c := cron.New()
+	spec := "0 0 0,1,2 * * ?" //设定一小时跑一次
+	err := c.AddFunc(spec, func() {
+		if len(webSearch.SearchEngine.DeleteSet) > int(float32(webSearch.SearchEngine.GetDocumentCount())*0.1) {
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				counts++
+				newEngine := engine.TransformToNewEngine(counts)
+				webSearch.SearchEngine = newEngine
+			}()
+			wg.Wait()
+		}
+	})
+	if err != nil {
+		fmt.Errorf("AddFunc error : %v", err)
+		return
+	}
+	c.Start()
+
 	r.GET("/index", GetHTML)
 	r.POST("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -56,14 +81,17 @@ func main() {
 	})
 	r.POST("/search", webSearch.SearchProcessFun)
 
-	err := r.Run(":9633") // 指定一个监听端口
-	if err != nil {
+	err1 := r.Run(":9633") // 指定一个监听端口
+	if err1 != nil {
 		return
 	}
+
+	defer c.Stop()
+	select {}
 }
 
 func initWukong(webSearch *web.WebSearch) {
-	openfile, err := os.Open("./wukong50k.csv")
+	openfile, err := os.Open("./wukongtest.csv")
 
 	if err != nil {
 		log.Printf("打开wukong50k文件失败, err=[%v]", err)
