@@ -27,7 +27,12 @@ type SearchResult struct {
 
 ## 运行流程
 ```
+修改config.yml并创建数据库
 go run ./main.go
+```
+## 前端访问
+```
+http://127.0.0.1:9633/main
 ```
 
 ## POST请求示例

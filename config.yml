@@ -1,0 +1,12 @@
+datasource:
+  driverName: mysql
+  host: 127.0.0.1
+
+  port: 3306
+  database: search
+
+  username: root
+  password: ru19870528
+
+  charset: utf8
+  loc: Local
