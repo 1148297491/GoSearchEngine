@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>搜索引擎</title>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+<div id="hint">
+    <span id="hinttext"></span>
+    <button type="button" class="btn btn-primary back">确定</button>
+</div>
+<div id="add">
+    <form id="form1" role="form">
+        <div class="form-group">
+            <label>
+                <input id="input_search" name="dir_name" placeholder="收藏夹名"/>
+            </label>
+                <button type="button" class="btn btn-primary" id="search">新增收藏夹</button>
+        </div>
+    </form>
+</div>
+<div id="queries">
+    <ol id="queryol">
+    </ol>
+</div>
+<div id="querydetail">
+    <ul id="uniqueul">
+    </ul>
+</div>
+<div id="collectFiles">
+    <ol id="collectFilesOl">
+    </ol>
+</div>
+</body>
+<script>
+    const divShow = divid => {
+        $("div").hide()
+        $(`#${divid}`).show()
+    }
+    /*contentType: "application/json",
+        crossDomain: true,
+        // 下面这句话允许跨域的cookie访问
+        xhrFields: {
+        withCredentials: true
+    },*/
+
+
+    const showAll = (res) => {
+        $("#collectFiles").show()
+        $("#collectFilesOl").empty()
+        let total = res.Data.DirList
+        //console.log(total)
+        //console.log(queryWords)
+        //console.log(filterWords)
+        //res = JSON.parse(res.data.documents)
+        for (let i in total)
+        {//`<mark>` + total[i]["originalText"] + `</mark>`
+            //let cnt = 0
+            //console.log(total[i]["highlightText"])
+            s = total[i]["dir_name"]
+            $("#collectFilesOl").append(
+                `<li><div class="item" id="item-collectFilesOl${i}">${s}  <button type="button" class="btn btn-primary" id="collectFilesOl-delete-${i}">删除</button><input id="collectFilesOl-rename-input-${i}" name="new_dir_name" placeholder="重命名"/><button type="button" class="btn btn-primary" id="collectFilesOl-rename-${i}">重命名</button><button type="button" class="btn btn-primary" id="collectFilesOl-all-${i}">查看</button></div></li>`
+            )
+            /*if (res[i]["enabled"] == false) {
+                $(`#item-${i}`).css("opacity", "0.5");
+            }*/
+            $(`#collectFilesOl-delete-${i}`).click(e => {
+                e.preventDefault()
+                let data = {}
+                data["dir_id"] = total[i]["dir_id"]
+                $.ajax({
+                    type: 'POST',
+                    url: "/v1/dir/delete",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    dataType: 'json',
+                    success: function(res) {
+                        window.location.href = window.location.href;
+                        window.location.reload();
+                    },
+                    error: (XMLHttpRequest, textStatus, errorThrown) => {
+                        console.log(XMLHttpRequest, textStatus, errorThrown)
+                        alert("请求失败,请您重新尝试")
+                    }
+                })
+            })
+            $(`#collectFilesOl-rename-${i}`).click(e => {
+                e.preventDefault()
+                let data = {}
+                data["dir_id"] = total[i]["dir_id"]
+                $(`#collectFilesOl-rename-input-${i}`).each((id, e) => {
+                    let nm = $(e).attr("name")
+                    data[nm] = e.value
+                    //\ console.log($(e).attr("name") + " " + e.value)
+                    console.log(nm + " " + data[nm])
+                })
+                $.ajax({
+                    type: 'POST',
+                    url: "/v1/dir/name",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    dataType: 'json',
+                    success: function(res) {
+                        window.location.href = window.location.href;
+                        window.location.reload();
+                    },
+                    error: (XMLHttpRequest, textStatus, errorThrown) => {
+                        console.log(XMLHttpRequest, textStatus, errorThrown)
+                        alert("请求失败,请您重新尝试")
+                    }
+                })
+
+            })
+            $(`#collectFilesOl-all-${i}`).click(e => {
+                e.preventDefault()
+                let data = {}
+                data["dir_id"] = total[i]["dir_id"]
+                $.ajax({
+                    type: 'POST',
+                    url: "/v1/dir/collection",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    dataType: 'json',
+                    success: function(res) {
+                        console.log(res)
+                        collectNews(res)
+                    },
+                    error: (XMLHttpRequest, textStatus, errorThrown) => {
+                        console.log(XMLHttpRequest, textStatus, errorThrown)
+                        alert("请求失败,请您重新尝试")
+                    }
+                })
+            })
+        }
+    }
+
+    const collectNews = (res) => {
+        $("div").hide()
+        $("#queries").show()
+        $("#queryol").empty()
+        let total = res.Data.CollectionList
+        //console.log(total)
+        //console.log(queryWords)
+        //console.log(filterWords)
+        //res = JSON.parse(res.data.documents)
+        for (let i in total)
+        {//`<mark>` + total[i]["originalText"] + `</mark>`
+            //let cnt = 0
+            //console.log(total[i]["highlightText"])
+            s = total[i]["word"]
+            u = total[i]["url_name"]
+            $("#queryol").append(
+                `<li><div class="item" id="item-queryol${i}">${s}  <button type="button" id="queryol-${i}"><img src="${u}" alt="error" width="100" height="100"></button><button type="button" class="btn btn-primary" id="queryol-delete-${i}">删除</button></div></li>`
+            )
+            /*if (res[i]["enabled"] == false) {
+                $(`#item-${i}`).css("opacity", "0.5");
+            }*/
+            $(`#queryol-${i}`).click(e => {
+                e.preventDefault()
+                showDetailPage(res, total[i]["url_name"])
+            })
+            $(`#queryol-delete-${i}`).click(e => {
+                e.preventDefault()
+                let data = {}
+                data["dir_id"] = total[i]["dir_id"]
+                data["collection_id"] = total[i]["collection_id"]
+                $.ajax({
+                    type: 'POST',
+                    url: "/v1/collection/cancel",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    dataType: 'json',
+                    success: function(res) {
+                        window.location.href = window.location.href;
+                        window.location.reload();
+                    },
+                    error: (XMLHttpRequest, textStatus, errorThrown) => {
+                        console.log(XMLHttpRequest, textStatus, errorThrown)
+                        alert("请求失败,请您重新尝试")
+                    }
+                })
+            })
+        }
+    }
+    const showDetailPage = (res, url) => {
+        divShow("querydetail")
+        $("#uniqueul").append(`<li list-style-type:none><button type="button" id="${0}"><img src="${url}" alt="error" width="1000" height="1000"></li>`)
+        $(`#${0}`).click(e => {
+            e.preventDefault()
+            $("#uniqueul").empty()
+            $('#querydetail .btn').unbind();
+            divShow("queries")
+            $(".form-group,.checkbox,.form-check,#add").show()
+            collectNews(res)
+        })
+    }
+
+    $(document).ready(() => {
+        $("div").hide()
+        $(".form-group,.checkbox,.form-check,#add").show()
+        $.ajax({
+            type: 'GET',
+            url: "/v1/dir/get",
+            contentType: "application/json",
+            crossDomain: true,
+            // 下面这句话允许跨域的cookie访问
+            xhrFields: {
+                withCredentials: true
+            },
+            success: (res) => showAll(res),
+            error: (XMLHttpRequest, textStatus, errorThrown) => {
+                console.log(XMLHttpRequest, textStatus, errorThrown)
+                alert("请求失败,请您重新尝试")
+            }
+        })
+        $("#search").click(function () {
+            // var data = new FormData($("#form1")[0]);
+            let data = {}
+            $(".form-group input").each((id, e) => {
+                let nm = $(e).attr("name")
+                    data[nm] = e.value
+
+                //\ console.log($(e).attr("name") + " " + e.value)
+                //console.log($(e).attr("name") + " " + data[nm])
+            })
+            $.ajax({
+                type: 'POST',
+                url: "/v1/dir/new",
+                contentType: "application/json",
+                crossDomain: true,
+                // 下面这句话允许跨域的cookie访问
+                xhrFields: {
+                    withCredentials: true
+                },
+                data: JSON.stringify(data),
+                dataType: 'json',
+                success: function(res) {
+                    window.location.href = window.location.href;
+                    window.location.reload();
+                },
+                error: (XMLHttpRequest, textStatus, errorThrown) => {
+                    console.log(XMLHttpRequest, textStatus, errorThrown)
+                    alert("请求失败,请您重新尝试")
+                }
+            })
+        })
+    });
+</script>
+
+<style>
+    #add {
+        margin-top : 3em;
+        margin-left : 10em;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group {
+        width : 80%;
+        position: relative;
+    }
+
+    .form-group  input{
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 900px;
+    }
+
+    .form-group  #search{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 100px;
+    }
+    .form-group  #login1{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 50px;
+        width: 100px;
+    }
+    .form-group  #logout1{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 100px;
+        width: 100px;
+    }
+    .form-group  #signup1{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 150px;
+        width: 100px;
+    }
+    .form-group  #signup3{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 100px;
+    }
+    #bsearch {
+        position: fixed;
+        left: 400px;
+        top: 200px;
+    }
+
+    #bPhotoSearch {
+        position: fixed;
+        right: 400px;
+        top: 200px;
+    }
+</style>

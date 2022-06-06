@@ -11,10 +11,7 @@
 </head>
 
 <body>
-<div id="choice" class="container">
-    <button id="bsearch" class="btn btn-primary">搜索文字图片</button>
-    <a href="http://127.0.0.1:5000/uploads"><button id="bPhotoSearch" class="btn btn-success">以图搜图</button></a>
-</div>
+
 <div id="hint">
     <span id="hinttext"></span>
     <button type="button" class="btn btn-primary back">确定</button>
@@ -25,7 +22,11 @@
             <label>
                 <input id="input_search" name="query" placeholder="搜索内容"/>
             </label>
-            <button type="button" class="btn btn-primary" id="search">搜索</button>
+                <button type="button" class="btn btn-primary" id="search">搜索</button>
+                <button type="button" class="btn btn-primary" id="login1" onclick="location.replace('login') ">登录</button>
+                <button type="button" class="btn btn-primary" id="logout1" onclick="logoutDialog()">退出</button>
+                <button type="button" class="btn btn-primary" id="signup1" onclick="location.replace('register') ">注册</button>
+                <button type="button" class="btn btn-primary" id="file1" onclick="location.replace('collectFiles') ">收藏夹</button>
         </div>
         <div class="form-group">
             <label>
@@ -51,16 +52,84 @@
     <ul id="uniqueul">
     </ul>
 </div>
+<div id="collectFiles">
+    <ol id="collectFilesol">
+    </ol>
+</div>
 </body>
 <script>
     const divShow = divid => {
         $("div").hide()
         $(`#${divid}`).show()
     }
-
-    const msgHint = text => {
-        $("#hinttext").html(text);
-        divShow("hint")
+    /*contentType: "application/json",
+        crossDomain: true,
+        // 下面这句话允许跨域的cookie访问
+        xhrFields: {
+        withCredentials: true
+    },*/
+    const logoutDialog = text => {
+        if(confirm('确认退出吗')){
+            $.ajax({
+                type: 'POST',
+                url: "/v1/user/logout",
+                contentType: "application/json",
+                crossDomain: true,
+                // 下面这句话允许跨域的cookie访问
+                xhrFields: {
+                    withCredentials: true
+                },
+                error: (XMLHttpRequest, textStatus, errorThrown) => {
+                    console.log(XMLHttpRequest, textStatus, errorThrown)
+                    alert("请求失败,请您重新尝试")
+                }
+            })
+        }
+    }
+    const showCollects = (res, messages, word, url) => {
+        $("div").hide()
+        $("#collectFiles").show()
+        $("#collectFilesol").empty()
+        let total = res.Data.DirList
+        //console.log(queryWords)
+        //console.log(filterWords)
+        //res = JSON.parse(res.data.documents)
+        for (let i in total)
+        {//`<mark>` + total[i]["originalText"] + `</mark>`
+            //let cnt = 0
+            //console.log(total[i]["highlightText"])
+            s = total[i]["dir_name"]
+            $("#collectFilesol").append(
+                `<li><div class="item" id="item-collectFiles-${i}">${s}  <button type="button" class="btn btn-primary" id="collectFiles-${i}">收藏</button></div></li>`
+            )
+            /*if (res[i]["enabled"] == false) {
+                $(`#item-${i}`).css("opacity", "0.5");
+            }*/
+            $(`#collectFiles-${i}`).click(e => {
+                e.preventDefault()
+                let data = {}
+                data["dir_id"] = total[i]["dir_id"]
+                data["word"] = word
+                data["url_name"] = url
+                $.ajax({
+                    type: 'POST',
+                    url: "/v1/collection/collect",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    dataType: 'json',
+                    success: function(res) {
+                        if(res.Code == 0)
+                            alert("收藏成功！")
+                        else
+                            alert("收藏失败！")
+                    },
+                    error: (XMLHttpRequest, textStatus, errorThrown) => {
+                        console.log(XMLHttpRequest, textStatus, errorThrown)
+                        alert("请求失败,请您重新尝试")
+                    }
+                })
+            })
+        }
     }
 
     const showAll = (res, queryWords, filterWords) => {
@@ -83,37 +152,39 @@
             s = total[i]["highlightText"]
             u = total[i]["url"]
             $("#queryol").append(
-                `<li><div class="item" id="item-${i}">${s}  <button type="button" id="${i}"><img src="${u}" alt="error" width="100" height="100"></div></li>`
+                `<li><div class="item" id="item-queryol${i}">${s}  <button type="button" id="queryol-${i}"><img src="${u}" alt="error" width="100" height="100"></button><button type="button" class="btn btn-primary" id="collect-${i}">收藏</button></div></li>`
             )
             /*if (res[i]["enabled"] == false) {
                 $(`#item-${i}`).css("opacity", "0.5");
             }*/
-            $(`#${i}`).click(e => {
+            $(`#queryol-${i}`).click(e => {
                 e.preventDefault()
                 showDetailPage(res, total[i]["url"])
+            })
+            $(`#collect-${i}`).click(e => {
+                e.preventDefault()
+                collectNews(res, total[i]["originalText"], total[i]["url"])
             })
         }
         for (let j in relates)
         {
             r = relates[j]
-            let ind = parseInt(j) + parseInt(total.length)
             $("#relateol").append(
-                `<li><div class="item" id="item-${ind}"><button type="button" id="${ind}">${r}</div></li>`
+                `<li><div class="item" id="item-relateol${j}"><button type="button" id="relateol-${j}">${r}</div></li>`
             )
-            $(`#${ind}`).click(e => {
+            $(`#relateol-${j}`).click(e => {
                 e.preventDefault()
                 $("#input_search").empty()
-                $("#input_search").val(relates[ind - total.length])
+                $("#input_search").val(relates[j])
             })
         }
         for (let k = 0 ; k < pageCount ; k++)
         {
-            let temp = k + total.length + relates.length
             let pg = k + 1
             $("#pageul").append(
-                `<li style="float: left;list-style-type:none"><div class="item" id="item-${temp}"><button type="button" id="${temp}">${pg}</div></li>`
+                `<li style="float: left;list-style-type:none"><div class="item" id="item-pageul${k}"><button type="button" id="pageul-${k}">${pg}</div></li>`
             )
-            $(`#${temp}`).click(e => {
+            $(`#pageul-${k}`).click(e => {
                 e.preventDefault()
                 showSelectedPage(queryWords, filterWords, pg)
             })
@@ -121,14 +192,32 @@
     }
     const showDetailPage = (res, url) => {
         divShow("querydetail")
-        $("#uniqueul").append(`<li list-style-type:none><button type="button" id="${-1}"><img src="${url}" alt="error" width="1000" height="1000"></li>`)
-        $(`#${-1}`).click(e => {
+        $("#uniqueul").append(`<li list-style-type:none><button type="button" id="${0}"><img src="${url}" alt="error" width="1000" height="1000"></li>`)
+        $(`#${0}`).click(e => {
             e.preventDefault()
             $("#uniqueul").empty()
             $('#querydetail .btn').unbind();
             divShow("queries")
             $(".form-group,.checkbox,.form-check,#add").show()
             showAll(res)
+        })
+    }
+
+    const collectNews = (messages, url, word) => {
+        $.ajax({
+            type: 'GET',
+            url: "/v1/dir/get",
+            contentType: "application/json",
+            crossDomain: true,
+            // 下面这句话允许跨域的cookie访问
+            xhrFields: {
+                withCredentials: true
+            },
+            success: (res) => showCollects(res, messages, url, word),
+            error: (XMLHttpRequest, textStatus, errorThrown) => {
+                console.log(XMLHttpRequest, textStatus, errorThrown)
+                alert("请求失败,请您重新尝试")
+            }
         })
     }
     const showSelectedPage = (word, filter, pg) => {
@@ -153,13 +242,8 @@
         })
     }
     $(document).ready(() => {
-        divShow("choice")
-
-        $("#bsearch").click(() => {
-            $("div").hide()
-            $(".form-group,.checkbox,.form-check,#add").show()
-        })
-
+        $("div").hide()
+        $(".form-group,.checkbox,.form-check,#add").show()
         $("#search").click(function () {
             // var data = new FormData($("#form1")[0]);
             let data = {}
@@ -224,23 +308,40 @@
         top: 0;
         width: 900px;
     }
-    .form-group  button{
+
+    .form-group  #search{
         display: block;
         position: absolute;
         right: 0;
         top: 0;
         width: 100px;
     }
-
-    #bsearch {
-        position: fixed;
-        left: 400px;
-        top: 200px;
+    .form-group  #login1{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 50px;
+        width: 100px;
     }
-
-    #bPhotoSearch {
-        position: fixed;
-        right: 400px;
+    .form-group  #logout1{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 100px;
+        width: 100px;
+    }
+    .form-group  #signup1{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 150px;
+        width: 100px;
+    }
+    .form-group  #file1{
+        display: block;
+        position: absolute;
+        right: 0;
         top: 200px;
+        width: 100px;
     }
 </style>
