@@ -1,11 +1,12 @@
 package benchmark
 
 import (
-	"gofound/searcher/arrays"
+	"GoSearchEngine/searcher/arrays"
 	"math/rand"
 	"testing"
+
+	"github.com/ryszard/goskiplist/skiplist"
 )
-import "github.com/ryszard/goskiplist/skiplist"
 
 func BenchmarkSkipList(b *testing.B) {
 

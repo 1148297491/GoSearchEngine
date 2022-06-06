@@ -5,8 +5,8 @@ package searcher
 */
 
 import (
-	"gofound/searcher/storage"
-	"gofound/searcher/utils"
+	"GoSearchEngine/searcher/storage"
+	"GoSearchEngine/searcher/utils"
 	"io/ioutil"
 	"os"
 	"path"

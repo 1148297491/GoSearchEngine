@@ -1,8 +1,8 @@
 package sorts
 
 import (
-	"gofound/searcher/model"
-	"gofound/searcher/utils"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/utils"
 	"sort"
 	"sync"
 )

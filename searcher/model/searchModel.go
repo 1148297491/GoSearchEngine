@@ -69,7 +69,8 @@ type SearchResult struct {
 }
 
 type LevelDBContext struct {
-	Key    []byte
-	Value  []byte
-	KvType uint32 //0表示倒排1表示正排2表示文档仓
+	Key        []byte
+	Value      []byte
+	KvType     uint32 //0表示倒排1表示正排2表示文档仓
+	KvShardNum int    //表示该KV对在哪个分块中
 }

@@ -1,4 +1,4 @@
-module gofound
+module GoSearchEngine
 
 go 1.18
 

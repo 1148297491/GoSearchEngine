@@ -1,15 +1,16 @@
 package collection
 
 import (
+	"GoSearchEngine/common"
+	"GoSearchEngine/dto"
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/models"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"gofound/common"
-	"gofound/dto"
-	"gofound/middleware"
-	"gofound/models"
-	"net/http"
 )
 
 func CancelCollect(c *gin.Context) {

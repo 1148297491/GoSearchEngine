@@ -1,15 +1,15 @@
 package searcher
 
 import (
+	"GoSearchEngine/searcher/arrays"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/pagination"
+	relatedsearch "GoSearchEngine/searcher/relatedSearch"
+	"GoSearchEngine/searcher/sorts"
+	"GoSearchEngine/searcher/storage"
+	"GoSearchEngine/searcher/utils"
+	"GoSearchEngine/searcher/words"
 	"fmt"
-	"gofound/searcher/arrays"
-	"gofound/searcher/model"
-	"gofound/searcher/pagination"
-	relatedsearch "gofound/searcher/relatedSearch"
-	"gofound/searcher/sorts"
-	"gofound/searcher/storage"
-	"gofound/searcher/utils"
-	"gofound/searcher/words"
 	"log"
 	"os"
 	"runtime"
@@ -41,6 +41,10 @@ type Engine struct {
 	Shard                  int                          //分片数
 }
 
+func (e *Engine) GetinvertedIndexStorages(index int) *storage.LeveldbStorage {
+	return e.invertedIndexStorages[index]
+}
+
 type Option struct {
 	InvertedIndexName string //倒排索引
 	PositiveIndexName string //正排索引
@@ -57,7 +61,8 @@ func (e *Engine) Init() {
 	// 调用waitGroup{} 实现信号量控制, 并发处理文档需要加锁
 	e.Add(1)
 	defer e.Done()
-
+	e.DeleteSet = make(utils.Set)
+	e.DeleteSet.Add(uint32(0))
 	e.TrieRoot = relatedsearch.NewTrie(e.Tokenizer)
 
 	if e.Option == nil {
@@ -117,10 +122,18 @@ func (e *Engine) IndexDocument(doc *model.IndexDoc) {
 	e.addDocumentWorkerChan[e.getShard(doc.Id)] <- doc
 }
 
-// GetQueue 获取队列剩余
-func (e *Engine) GetQueue() int {
+// GetQueue 获取初始化队列剩余
+func (e *Engine) GetInitQueue() int {
 	total := 0
 	for _, v := range e.addDocumentWorkerChan {
+		total += len(v)
+	}
+	return total
+}
+
+func (e *Engine) GetReInitQueue() int {
+	total := 0
+	for _, v := range e.addDbContextWorkerChan {
 		total += len(v)
 	}
 	return total
@@ -189,16 +202,6 @@ func (e *Engine) AddDocument(index *model.IndexDoc) {
 
 	id := index.Id
 
-	/*
-		//判断ID是否存在，如果存在，需要计算两次的差值，然后更新
-		isUpdate := e.optimizeIndex(id, splitWords)
-
-		//没有更新
-		if !isUpdate {
-			return
-		}
-	*/
-
 	for _, word := range splitWords {
 		e.addInvertedIndex(word, id)
 	}
@@ -235,85 +238,6 @@ func (e *Engine) addInvertedIndex(word string, id uint32) {
 	s.Set(key, utils.Encoder(ids))
 }
 
-/*
-//	移除没有的词
-func (e *Engine) optimizeIndex(id uint32, newWords []string) bool {
-	//判断id是否存在
-	e.Lock()
-	defer e.Unlock()
-
-	//计算差值
-	removes, found := e.getDifference(id, newWords)
-	if found && len(removes) > 0 {
-		//从这些词中移除当前ID
-		for _, word := range removes {
-			e.removeIdInWordIndex(id, word)
-		}
-	}
-
-	// 有没有更新
-	return !found || len(removes) > 0
-
-}
-
-func (e *Engine) removeIdInWordIndex(id uint32, word string) {
-
-	shard := e.getShardByWord(word)
-	wordStorage := e.invertedIndexStorages[shard]
-
-	//string作为key
-	key := []byte(word)
-
-	buf, found := wordStorage.Get(key)
-	if found {
-		ids := make([]uint32, 0)
-		utils.Decoder(buf, &ids)
-
-		//移除
-		index := arrays.Find(ids, id)
-		if index != -1 {
-			ids = utils.DeleteArray(ids, index)
-			if len(ids) == 0 {
-				err := wordStorage.Delete(key)
-				if err != nil {
-					panic(err)
-				}
-			} else {
-				wordStorage.Set(key, utils.Encoder(ids))
-			}
-		}
-	}
-
-}
-
-// 计算差值
-func (e *Engine) getDifference(id uint32, newWords []string) ([]string, bool) {
-
-	shard := e.getShard(id)
-	wordStorage := e.positiveIndexStorages[shard]
-	key := utils.Uint32ToBytes(id)
-	buf, found := wordStorage.Get(key)
-	// 如果文档ID存在,取文档ID对应内容：id对应 一个[]string
-	if found {
-		oldWords := make([]string, 0)
-		utils.Decoder(buf, &oldWords)
-
-		//计算需要移除的
-		removes := make([]string, 0)
-		for _, word := range oldWords {
-
-			//旧的在新的里面不存在，就是需要移除的
-			if !arrays.ArrayStringExists(newWords, word) {
-				removes = append(removes, word)
-			}
-		}
-		return removes, true
-	}
-
-	return nil, false
-}
-
-*/
 // 添加正排索引,以及文档数据 id=>keys id=>doc
 func (e *Engine) addPositiveIndex(index *model.IndexDoc, keys []string) {
 	e.Lock()
@@ -342,11 +266,10 @@ func (e *Engine) addPositiveIndex(index *model.IndexDoc, keys []string) {
 func (e *Engine) MultiSearch(request *model.SearchRequest) *model.SearchResult {
 	//等待搜索初始化完成，即等待分片levelDB引擎初始化的完成
 	e.Wait()
+
 	// 分词 分词结果考虑需要过滤的词语
 	// 首先需要对过滤词进行去重
 	filterWords := e.DeleteDuplicatedWordAndCut(request.FilterWords)
-
-	// query := e.deleteFilterWordsFromQuery(filterWords, request.Query)
 
 	words := e.Tokenizer.Cut(request.Query, filterWords) // 切分搜索语句
 
@@ -564,135 +487,31 @@ func (e *Engine) produceFilterIdx(filteridxChannel chan uint32, filterWord strin
 
 func (e *Engine) DbContextWorkerChan(worker chan *model.LevelDBContext) {
 	for {
-		keyValue := <-worker
-		if keyValue.KvType == 0 {
-			var stringHashNum uint32
-			utils.Decoder(keyValue.Key, &stringHashNum)
-			stringHashNum %= uint32(e.Shard)
-			e.invertedIndexStorages[stringHashNum].Set(keyValue.Key, keyValue.Value)
-		} else if keyValue.KvType == 1 {
-			var textIdNum uint32
-			utils.Decoder(keyValue.Key, &textIdNum)
-			if !e.DeleteSet.IsExist(textIdNum) {
-				textIdNum %= uint32(e.Shard)
-				e.positiveIndexStorages[textIdNum].Set(keyValue.Key, keyValue.Value)
-			}
-		} else {
-			var textIdNum uint32
-			utils.Decoder(keyValue.Key, &textIdNum)
-			if !e.DeleteSet.IsExist(textIdNum) {
-				textIdNum %= uint32(e.Shard)
-				e.docStorages[textIdNum].Set(keyValue.Key, keyValue.Value)
-			}
-		}
+		context := <-worker
+		e.AddContext(context)
 	}
 }
 
-func (e *Engine) joinInvertedIndexToNewEngine(index int, newEngine *Engine) {
-	iter := e.invertedIndexStorages[index].GetDb().NewIterator(nil, nil)
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		var ids []uint32
-		var newIds []uint32
-		utils.Decoder(value, &ids)
-		for _, id := range ids {
-			if !e.DeleteSet.IsExist(id) {
-				newIds = append(newIds, id)
-			}
-		}
-		newKV := &model.LevelDBContext{
-			Key:    key,
-			Value:  utils.Encoder(newIds),
-			KvType: 0,
-		}
-		newEngine.addDbContextWorkerChan[index] <- newKV
+func (e *Engine) AddContext(keyValue *model.LevelDBContext) {
+	e.Wait()
+	e.Lock()
+	defer e.Unlock()
+	if keyValue.KvType == 0 {
+		e.invertedIndexStorages[keyValue.KvShardNum].Set(keyValue.Key, keyValue.Value)
+	} else if keyValue.KvType == 1 {
+		e.positiveIndexStorages[keyValue.KvShardNum].Set(keyValue.Key, keyValue.Value)
+	} else {
+		e.docStorages[keyValue.KvShardNum].Set(keyValue.Key, keyValue.Value)
 	}
 }
 
-func (e *Engine) joinPositiveIndexToNewEngine(index int, newEngine *Engine) {
-	iter := e.positiveIndexStorages[index].GetDb().NewIterator(nil, nil)
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		var textIdNum uint32
-		utils.Decoder(key, &textIdNum)
-		if !e.DeleteSet.IsExist(textIdNum) {
-			newKV := &model.LevelDBContext{
-				Key:    key,
-				Value:  value,
-				KvType: 0,
-			}
-			newEngine.addDbContextWorkerChan[index] <- newKV
-		}
-	}
-}
-
-func (e *Engine) joinDocStoreToNewEngine(index int, newEngine *Engine) {
-	iter := e.docStorages[index].GetDb().NewIterator(nil, nil)
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		var textIdNum uint32
-		utils.Decoder(key, &textIdNum)
-		if !e.DeleteSet.IsExist(textIdNum) {
-			newKV := &model.LevelDBContext{
-				Key:    key,
-				Value:  value,
-				KvType: 0,
-			}
-			newEngine.addDbContextWorkerChan[index] <- newKV
-		}
-	}
-}
-
-func (e *Engine) initNewEngine(engineNum int) *Engine {
-
-	var newEngine = &Engine{ //定义一个新的Engine
-		IndexPath: "../tests/indexTest/test" + strconv.Itoa(engineNum), // 索引文件路径
-		Tokenizer: e.Tokenizer,                                         //定义分词器
-		Option:    e.Option,                                            //定义newEngine的配置信息
-		TrieRoot:  e.TrieRoot,                                          //延用原Engine的前缀树
-		Shard:     e.Shard,                                             //分片数
-	}
-	newEngine.addDbContextWorkerChan = make([]chan *model.LevelDBContext, newEngine.Shard)
-
-	s, err := storage.Open(newEngine.getFilePath(fmt.Sprintf("%s_%d_%d", newEngine.Option.DocIndexName, engineNum, newEngine.Shard)))
-	if err != nil {
-		panic(err)
-	}
-	//存放文档相关的levelDB，levelDB存放文档实体：id+文档内容, 后面需要根据分片号获得对应的文档仓
-	newEngine.docStorages = append(newEngine.docStorages, s)
-
-	//初始化倒排索引数据库
-	ks, kerr := storage.Open(e.getFilePath(fmt.Sprintf("%s_%d_%d", newEngine.Option.InvertedIndexName, engineNum, newEngine.Shard)))
-	if kerr != nil {
-		panic(err)
-	}
-	newEngine.invertedIndexStorages = append(newEngine.invertedIndexStorages, ks)
-
-	//id和keys映射 正排索引
-	iks, ikerr := storage.Open(newEngine.getFilePath(fmt.Sprintf("%s_%d_%d", newEngine.Option.PositiveIndexName, engineNum, newEngine.Shard)))
-	if ikerr != nil {
-		panic(ikerr)
-	}
-	newEngine.positiveIndexStorages = append(newEngine.positiveIndexStorages, iks)
-	return newEngine
-}
-
-func (e *Engine) TransformToNewEngine(engineNum int) *Engine {
-
-	newEngine := e.initNewEngine(engineNum)
-
-	for index := 0; index < newEngine.Shard; index++ {
-		worker := make(chan *model.LevelDBContext, 1000)
-		newEngine.addDbContextWorkerChan[index] = worker //定义索引缓冲区
-		go newEngine.DbContextWorkerChan(worker)         // 启动协程并发消费索引实体
-	}
+func (e *Engine) joinInvertedIndexToNewEngine(newEngine *Engine, produceWg *sync.WaitGroup) {
+	defer produceWg.Done()
 	for index := 0; index < e.Shard; index++ {
 		iter := e.invertedIndexStorages[index].GetDb().NewIterator(nil, nil)
+		count := 0
 		for iter.Next() {
-			key := iter.Key()
+			count++
 			value := iter.Value()
 			var ids []uint32
 			var newIds []uint32
@@ -703,15 +522,128 @@ func (e *Engine) TransformToNewEngine(engineNum int) *Engine {
 				}
 			}
 			newKV := &model.LevelDBContext{
-				Key:    key,
-				Value:  utils.Encoder(newIds),
-				KvType: 0,
+				Key:        iter.Key(),
+				Value:      utils.Encoder(newIds),
+				KvType:     0,
+				KvShardNum: index,
 			}
 			newEngine.addDbContextWorkerChan[index] <- newKV
 		}
-		e.joinInvertedIndexToNewEngine(index, newEngine)
-		e.joinPositiveIndexToNewEngine(index, newEngine)
-		e.joinDocStoreToNewEngine(index, newEngine)
+		iter.Release()
+	}
+}
+func (e *Engine) joinPositiveIndexToNewEngine(newEngine *Engine, produceWg *sync.WaitGroup) {
+	defer produceWg.Done()
+	for index := 0; index < e.Shard; index++ {
+		iter := e.positiveIndexStorages[index].GetDb().NewIterator(nil, nil)
+		for iter.Next() {
+			key := iter.Key()
+			value := iter.Value()
+			textIdNum := utils.BytesToUint32(key)
+			if !e.DeleteSet.IsExist(textIdNum) {
+				newKV := &model.LevelDBContext{
+					Key:        key,
+					Value:      value,
+					KvType:     1,
+					KvShardNum: index,
+				}
+				newEngine.addDbContextWorkerChan[index] <- newKV
+			}
+		}
+		iter.Release()
+	}
+}
+func (e *Engine) joinDocStoreToNewEngine(newEngine *Engine, produceWg *sync.WaitGroup) {
+	defer produceWg.Done()
+	for index := 0; index < e.Shard; index++ {
+		iter := e.docStorages[index].GetDb().NewIterator(nil, nil)
+		for iter.Next() {
+			key := iter.Key()
+			value := iter.Value()
+			textIdNum := utils.BytesToUint32(key)
+			if !e.DeleteSet.IsExist(textIdNum) {
+				newKV := &model.LevelDBContext{
+					Key:        key,
+					Value:      value,
+					KvType:     2,
+					KvShardNum: index,
+				}
+				newEngine.addDbContextWorkerChan[index] <- newKV
+			}
+		}
+		iter.Release()
+	}
+}
+
+func (e *Engine) initNewEngine(engineNum int) *Engine {
+	var newEngine = &Engine{ //定义一个新的Engine
+		IndexPath: "./tests/indexTest/test" + strconv.Itoa(engineNum), // 索引文件路径
+		Tokenizer: e.Tokenizer,                                        //定义分词器
+		Option:    e.Option,                                           //定义newEngine的配置信息
+		TrieRoot:  e.TrieRoot,                                         //延用原Engine的前缀树
+		Shard:     e.Shard,                                            //分片数
+	}
+	newEngine.DeleteSet = make(utils.Set)
+	newEngine.addDbContextWorkerChan = make([]chan *model.LevelDBContext, newEngine.Shard)
+	for shardIndex := 0; shardIndex < newEngine.Shard; shardIndex++ {
+		s, err := storage.Open(newEngine.getFilePath(fmt.Sprintf("%s_%d_%d", newEngine.Option.DocIndexName, engineNum, shardIndex)))
+		if err != nil {
+			panic(err)
+		}
+		//存放文档相关的levelDB，levelDB存放文档实体：id+文档内容, 后面需要根据分片号获得对应的文档仓
+		newEngine.docStorages = append(newEngine.docStorages, s)
+
+		//初始化倒排索引数据库
+		ks, kerr := storage.Open(newEngine.getFilePath(fmt.Sprintf("%s_%d_%d", newEngine.Option.InvertedIndexName, engineNum, shardIndex)))
+		if kerr != nil {
+			panic(err)
+		}
+		newEngine.invertedIndexStorages = append(newEngine.invertedIndexStorages, ks)
+
+		//id和keys映射 正排索引
+		iks, ikerr := storage.Open(newEngine.getFilePath(fmt.Sprintf("%s_%d_%d", newEngine.Option.PositiveIndexName, engineNum, shardIndex)))
+		if ikerr != nil {
+			panic(ikerr)
+		}
+		newEngine.positiveIndexStorages = append(newEngine.positiveIndexStorages, iks)
 	}
 	return newEngine
 }
+
+func (nowEngine *Engine) TransformToNewEngine(engineNum int, wg *sync.WaitGroup) *Engine {
+	defer wg.Done()
+	newEngine := nowEngine.initNewEngine(engineNum)
+	newEngine.Add(1)
+	go func() {
+		defer newEngine.Done()
+		for indexChan := 0; indexChan < newEngine.Shard; indexChan++ {
+			worker := make(chan *model.LevelDBContext, 1000)
+			newEngine.addDbContextWorkerChan[indexChan] = worker //定义索引缓冲区
+			go newEngine.DbContextWorkerChan(worker)             // 启动协程并发消费索引实体
+		}
+	}()
+	productWg := &sync.WaitGroup{}
+	productWg.Add(3)
+	go func() {
+		nowEngine.joinInvertedIndexToNewEngine(newEngine, productWg)
+	}()
+	go func() {
+		nowEngine.joinPositiveIndexToNewEngine(newEngine, productWg)
+	}()
+	go func() {
+		nowEngine.joinDocStoreToNewEngine(newEngine, productWg)
+	}()
+	productWg.Wait()
+	for newEngine.GetReInitQueue() > 0 {
+
+	}
+	log.Println("shengchanwancheng")
+	return newEngine
+}
+
+/*
+curl -H "Content-Type: application/json" -X POST -d '{"query":"检查", "order":"", "page":1, "limit":1000, "filterword":["鸡蛋"]}' "127.0.0.1:9633/search"
+*/
+/*
+curl -H "Content-Type: application/json" -X POST -d '{"query":"黄色", "order":"", "page":1, "limit":1000, "filterword":["鸡蛋"]}' "127.0.0.1:9633/search"
+*/

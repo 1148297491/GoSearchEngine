@@ -1,9 +1,9 @@
 package web
 
 import (
-	"gofound/searcher"
-	"gofound/searcher/model"
-	"gofound/searcher/system"
+	"GoSearchEngine/searcher"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/system"
 	"os"
 	"runtime"
 

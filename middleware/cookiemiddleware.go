@@ -1,13 +1,14 @@
 package middleware
 
 import (
+	"GoSearchEngine/common"
+	"GoSearchEngine/dto"
+	"GoSearchEngine/models"
 	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"gofound/common"
-	"gofound/dto"
-	"gofound/models"
-	"net/http"
 )
 
 func CookieMiddleware() gin.HandlerFunc {

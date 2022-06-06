@@ -1,16 +1,17 @@
 package dir
 
 import (
+	"GoSearchEngine/common"
+	"GoSearchEngine/dto"
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/models"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	"gofound/common"
-	"gofound/dto"
-	"gofound/middleware"
-	"gofound/models"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 func GetCollection(c *gin.Context) {

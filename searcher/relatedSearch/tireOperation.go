@@ -1,9 +1,9 @@
 package relatedsearch
 
 import (
+	"GoSearchEngine/searcher/utils"
+	"GoSearchEngine/searcher/words"
 	"bytes"
-	"gofound/searcher/utils"
-	"gofound/searcher/words"
 )
 
 const (

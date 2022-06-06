@@ -1,8 +1,8 @@
 package dto
 
 import (
-	"gofound/common"
-	"gofound/models"
+	"GoSearchEngine/common"
+	"GoSearchEngine/models"
 )
 
 type CreateUserResponse struct {

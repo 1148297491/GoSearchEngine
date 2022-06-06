@@ -1,12 +1,13 @@
 package user
 
 import (
-	"github.com/gin-gonic/gin"
-	"gofound/common"
-	"gofound/dto"
-	"gofound/models"
+	"GoSearchEngine/common"
+	"GoSearchEngine/dto"
+	"GoSearchEngine/models"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Logout(c *gin.Context) {

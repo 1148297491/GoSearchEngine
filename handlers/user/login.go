@@ -1,15 +1,16 @@
 package user
 
 import (
+	"GoSearchEngine/common"
+	"GoSearchEngine/dto"
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/models"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	"gofound/common"
-	"gofound/dto"
-	"gofound/middleware"
-	"gofound/models"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 func Login(c *gin.Context) {

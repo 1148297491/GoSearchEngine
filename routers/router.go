@@ -1,14 +1,16 @@
 package routers
 
 import (
-	"github.com/gin-gonic/gin"
-	"gofound/handlers/collection"
-	"gofound/handlers/dir"
-	"gofound/handlers/user"
-	"gofound/middleware"
-	"gofound/tools"
+	"GoSearchEngine/handlers/collection"
+	"GoSearchEngine/handlers/dir"
+	"GoSearchEngine/handlers/user"
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/tools"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
+
 func GetHTMLMain(c *gin.Context) {
 	c.HTML(http.StatusOK, "main.html", nil)
 }
@@ -49,9 +51,9 @@ func SetupRouter() *gin.Engine {
 		v1Group.GET("/user/whoami", middleware.CookieMiddleware(), user.Whoami)  // 查询当前用户
 		//
 		//收藏夹
-		v1Group.POST("/dir/new", middleware.CookieMiddleware(), dir.NewDir)              // 新建收藏夹
-		v1Group.POST("/dir/delete", middleware.CookieMiddleware(), dir.DeleteDir)        // 删除收藏夹
-		v1Group.POST("/dir/name", middleware.CookieMiddleware(), dir.UpdateName)         // 更新收藏夹名字
+		v1Group.POST("/dir/new", middleware.CookieMiddleware(), dir.NewDir)               // 新建收藏夹
+		v1Group.POST("/dir/delete", middleware.CookieMiddleware(), dir.DeleteDir)         // 删除收藏夹
+		v1Group.POST("/dir/name", middleware.CookieMiddleware(), dir.UpdateName)          // 更新收藏夹名字
 		v1Group.GET("/dir/get", middleware.CookieMiddleware(), dir.GetDir)                //获取用户的收藏夹
 		v1Group.POST("/dir/collection", middleware.CookieMiddleware(), dir.GetCollection) // 读取某个收藏夹的内容
 

@@ -1,8 +1,8 @@
 package web
 
 import (
-	"gofound/searcher"
-	"gofound/searcher/model"
+	"GoSearchEngine/searcher"
+	"GoSearchEngine/searcher/model"
 
 	"github.com/gin-gonic/gin"
 )

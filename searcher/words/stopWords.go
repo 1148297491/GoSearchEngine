@@ -1,8 +1,8 @@
 package words
 
 import (
+	"GoSearchEngine/searcher/utils"
 	"bufio"
-	"gofound/searcher/utils"
 	"io"
 	"log"
 	"os"

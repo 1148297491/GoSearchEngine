@@ -1,10 +1,11 @@
 package sorts
 
 import (
-	"github.com/emirpasic/gods/trees/avltree"
-	"gofound/searcher/utils"
+	"GoSearchEngine/searcher/utils"
 	"log"
 	"sync"
+
+	"github.com/emirpasic/gods/trees/avltree"
 )
 
 // IdSort 二叉树对id 进行打分和排序

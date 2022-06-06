@@ -1,8 +1,8 @@
 package words
 
 import (
+	"GoSearchEngine/searcher/utils"
 	"embed"
-	"gofound/searcher/utils"
 	"log"
 	"strings"
 

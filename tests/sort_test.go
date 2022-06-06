@@ -1,8 +1,8 @@
 package tests
 
 import (
+	"GoSearchEngine/searcher/utils"
 	"fmt"
-	"gofound/searcher/utils"
 	"math/rand"
 	"sort"
 	"testing"

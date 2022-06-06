@@ -1,14 +1,14 @@
 package main
 
 import (
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/routers"
+	"GoSearchEngine/searcher"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/words"
+	"GoSearchEngine/web"
 	"encoding/csv"
-	"fmt"
-	"gofound/middleware"
-	"gofound/routers"
-	"gofound/searcher"
-	"gofound/searcher/model"
-	"gofound/searcher/words"
-	"gofound/web"
+
 	"io"
 	"log"
 	"net/http"
@@ -19,6 +19,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron"
 )
+
+func GetHTML(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
+}
 
 func main() {
 
@@ -34,8 +38,8 @@ func main() {
 	wordTokenizer := words.NewTokenizer("./searcher/words/data/dictionary.txt")
 
 	var engine = &searcher.Engine{
-		IndexPath: "../tests/indexTest/test0", // 索引文件路径
-		Tokenizer: wordTokenizer,              //定义分词器
+		IndexPath: "./tests/indexTest/test0", // 索引文件路径
+		Tokenizer: wordTokenizer,             //定义分词器
 	}
 
 	//设置engine配置文件
@@ -49,24 +53,26 @@ func main() {
 	}
 
 	initWukong(webSearch)
-	counts := 0
+
+	counts := 1
+
 	c := cron.New()
-	spec := "0 0 0,1,2 * * ?" //设定一小时跑一次
+	spec := "0 */60 * * * ?" //设定60分钟检测一次
 	err := c.AddFunc(spec, func() {
 		if len(webSearch.SearchEngine.DeleteSet) > int(float32(webSearch.SearchEngine.GetDocumentCount())*0.1) {
+			//设定检测规则：如果删除的文章数量大于当前数据库数量的百分之10，重新更换引擎数据库，并将其保存为一个新版本
 			wg := &sync.WaitGroup{}
 			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				counts++
-				newEngine := engine.TransformToNewEngine(counts)
-				webSearch.SearchEngine = newEngine
-			}()
+			counts++
+			newEngine := webSearch.SearchEngine.TransformToNewEngine(counts, wg)
 			wg.Wait()
+			webSearch.SearchEngine = newEngine
+
+			log.Println("重新初始化引擎！")
 		}
 	})
 	if err != nil {
-		fmt.Errorf("AddFunc error : %v", err)
+		log.Printf("AddFunc error : %v", err)
 		return
 	}
 	c.Start()
@@ -80,15 +86,15 @@ func main() {
 
 	err1 := r.Run(":9633") // 指定一个监听端口
 	if err1 != nil {
+		log.Printf("AddFunc error : %v", err)
 		return
 	}
 
 	defer c.Stop()
-	select {}
 }
 
 func initWukong(webSearch *web.WebSearch) {
-	openfile, err := os.Open("./wukongtest.csv")
+	openfile, err := os.Open("./wukong50k.csv")
 
 	if err != nil {
 		log.Printf("打开wukong50k文件失败, err=[%v]", err)
@@ -137,7 +143,7 @@ func initWukong(webSearch *web.WebSearch) {
 	// 到这一步消费者异步的消费不一定完成
 	// 尝试获取 第一条数据的第一个切分词
 
-	for webSearch.SearchEngine.GetQueue() > 0 {
+	for webSearch.SearchEngine.GetInitQueue() > 0 {
 		// 阻塞保证文档处理完成
 		// log.Printf("索引队列长度：%+v", engine.GetQueue())
 	}

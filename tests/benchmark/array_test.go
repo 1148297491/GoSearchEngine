@@ -1,7 +1,7 @@
 package benchmark
 
 import (
-	"gofound/searcher/arrays"
+	"GoSearchEngine/searcher/arrays"
 	"testing"
 )
 

@@ -1,10 +1,10 @@
 package searcher
 
 import (
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/words"
 	"encoding/csv"
 	"fmt"
-	"gofound/searcher/model"
-	"gofound/searcher/words"
 	"io"
 	"log"
 	"os"
@@ -94,7 +94,7 @@ func TestEngineIndex(t *testing.T) {
 
 	// 到这一步消费者异步的消费不一定完成
 	// 尝试获取 第一条数据的第一个切分词
-	for engine.GetQueue() > 0 {
+	for engine.GetInitQueue() > 0 {
 		// 阻塞保证文档处理完成
 		// log.Printf("索引队列长度：%+v", engine.GetQueue())
 	}
