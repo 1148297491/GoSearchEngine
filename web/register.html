@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>搜索引擎</title>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+<div id="signup">
+    <form id="form1" role="form">
+        <div class="form-group">
+            <label>
+                <input id="userNameSignup" name="Userphone" placeholder="用户名"/>
+            </label>
+                <button type="button" class="btn btn-primary" id="signup1">注册</button>
+        </div>
+        <div class="form-group">
+            <label>
+                <input id="passWordSignup" name="Password" type="password" placeholder="密码"/>
+            </label>
+        </div>
+    </form>
+</div>
+
+</body>
+<script>
+    const divShow = divid => {
+        $("div").hide()
+        $(`#${divid}`).show()
+    }
+
+    const msgHint = text => {
+        $("#hinttext").html(text);
+        divShow("hint")
+    }
+
+
+    $(document).ready(() => {
+        $("div").hide()
+        $(".form-group,.checkbox,.form-check,#signup").show()
+        $("#signup1").click(function () {
+            // var data = new FormData($("#form1")[0]);
+            let data = {}
+            $(".form-group input").each((id, e) => {
+                let nm = $(e).attr("name")
+                data[nm] = e.value
+                //\ console.log($(e).attr("name") + " " + e.value)
+                //console.log($(e).attr("name") + " " + data[nm])
+            })
+            $.ajax({
+                type: 'POST',
+                url: "/v1/user/signup",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                dataType: 'json',
+                success: function(res) {
+                    $("div").hide()
+                    location.href = "/index";
+                    window.event.returnValue = false;  // 注意加这一语句，要不没有跳转
+                    alert("注册成功！")
+                },
+                error: (XMLHttpRequest, textStatus, errorThrown) => {
+                    console.log(XMLHttpRequest, textStatus, errorThrown)
+                    alert("请求失败,请您重新尝试")
+                }
+            })
+        })
+    });
+</script>
+
+<style>
+    #signup {
+        margin-top : 3em;
+        margin-left : 10em;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group {
+        width : 80%;
+        position: relative;
+    }
+
+    .form-group  input{
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 900px;
+    }
+
+    .form-group  #signup1{
+        display: block;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 100px;
+    }
+</style>
