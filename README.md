@@ -1,4 +1,4 @@
-# SuperGoFound
+# GoSearchEngine
 
 ## 搜索请求结构体如下
 ```
