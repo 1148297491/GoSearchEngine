@@ -5,15 +5,12 @@ package searcher
 */
 
 import (
-	"fmt"
-	"gofound/searcher/storage"
-	"gofound/searcher/utils"
+	"GoSearchEngine/searcher/storage"
+	"GoSearchEngine/searcher/utils"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
-
-	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 // DeleteDuplicatedWordAndCut 对过滤单词进行进一步分词并进行去重 保证和搜索语句分词结果一致
@@ -73,46 +70,6 @@ func (e *Engine) GetDocById(id uint32) []byte {
 		return buf
 	}
 
-	return nil
-}
-
-// RemoveIndex 根据ID移除索引
-func (e *Engine) RemoveIndex(id uint32) error {
-	//移除
-	e.Lock()
-	defer e.Unlock()
-
-	shard := e.getShard(id)
-	key := utils.Uint32ToBytes(id)
-
-	//关键字和Id映射
-	//invertedIndexStorages []*storage.LeveldbStorage
-	//ID和key映射，用于计算相关度，一个id 对应多个key
-	ik := e.positiveIndexStorages[shard]
-	keysValue, found := ik.Get(key)
-	if !found {
-		return errors.New(fmt.Sprintf("没有找到id=%d", id))
-	}
-
-	keys := make([]string, 0)
-	utils.Decoder(keysValue, &keys)
-
-	//符合条件的key，要移除id
-	for _, word := range keys {
-		e.removeIdInWordIndex(id, word)
-	}
-
-	//删除id映射
-	err := ik.Delete(key)
-	if err != nil {
-		return errors.New(err.Error())
-	}
-
-	//文档仓
-	err = e.docStorages[shard].Delete(key)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

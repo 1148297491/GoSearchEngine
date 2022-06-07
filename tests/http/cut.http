@@ -1,6 +1,0 @@
-GET localhost:5678/api/word/cut?q=开发者程序员是什么职业
-Content-Type: application/json
-
-{}
-
-###

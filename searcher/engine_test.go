@@ -3,8 +3,8 @@ package searcher
 import (
 	"encoding/csv"
 	"fmt"
-	"gofound/searcher/model"
-	"gofound/searcher/words"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/words"
 	"io"
 	"log"
 	"os"

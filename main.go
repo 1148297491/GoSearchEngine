@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/csv"
-	"gofound/middleware"
-	"gofound/routers"
-	"gofound/searcher"
-	"gofound/searcher/model"
-	"gofound/searcher/words"
-	"gofound/web"
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/routers"
+	"GoSearchEngine/searcher"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/words"
+	"GoSearchEngine/web"
 	"io"
 	"log"
 	"net/http"

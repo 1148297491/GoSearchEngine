@@ -1,9 +1,9 @@
 package web
 
 import (
-	"gofound/searcher"
-	"gofound/searcher/model"
-	"gofound/searcher/system"
+	"GoSearchEngine/searcher"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/system"
 	"os"
 	"runtime"
 
@@ -89,24 +89,7 @@ func (a *Api) wordCut(c *gin.Context) {
 }
 
 func welcome(c *gin.Context) {
-	c.JSON(200, Success("Welcome to GoFound"))
-}
-
-func (a *Api) removeIndex(c *gin.Context) {
-	removeIndexModel := &model.RemoveIndexModel{}
-	err := c.BindJSON(&removeIndexModel)
-	if err != nil {
-		c.JSON(200, Error(err.Error()))
-		return
-	}
-	engine := a.Engine
-
-	err = engine.RemoveIndex(removeIndexModel.Id)
-	if err != nil {
-		c.JSON(200, Error(err.Error()))
-		return
-	}
-	c.JSON(200, Success(nil))
+	c.JSON(200, Success("Welcome to GoSearchEngine"))
 }
 
 func (a *Api) dbs(ctx *gin.Context) {
@@ -137,8 +120,6 @@ func (a *Api) Register(router *gin.Engine, handlers ...gin.HandlerFunc) {
 	group.POST("/index", a.addIndex)
 
 	group.POST("/index/batch", a.batchAddIndex)
-
-	group.POST("/remove", a.removeIndex)
 
 	group.GET("/restart", a.restart)
 

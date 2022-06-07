@@ -2,11 +2,11 @@ package routers
 
 import (
 	"github.com/gin-gonic/gin"
-	"gofound/handlers/collection"
-	"gofound/handlers/dir"
-	"gofound/handlers/user"
-	"gofound/middleware"
-	"gofound/tools"
+	"GoSearchEngine/handlers/collection"
+	"GoSearchEngine/handlers/dir"
+	"GoSearchEngine/handlers/user"
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/tools"
 	"net/http"
 )
 func GetHTMLMain(c *gin.Context) {

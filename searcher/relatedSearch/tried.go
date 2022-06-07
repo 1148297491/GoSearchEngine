@@ -2,8 +2,8 @@ package relatedsearch
 
 import (
 	"fmt"
-	"gofound/searcher/utils"
-	"gofound/searcher/words"
+	"GoSearchEngine/searcher/utils"
+	"GoSearchEngine/searcher/words"
 )
 
 // Trie 树节点

@@ -2,14 +2,14 @@ package searcher
 
 import (
 	"fmt"
-	"gofound/searcher/arrays"
-	"gofound/searcher/model"
-	"gofound/searcher/pagination"
-	relatedsearch "gofound/searcher/relatedSearch"
-	"gofound/searcher/sorts"
-	"gofound/searcher/storage"
-	"gofound/searcher/utils"
-	"gofound/searcher/words"
+	"GoSearchEngine/searcher/arrays"
+	"GoSearchEngine/searcher/model"
+	"GoSearchEngine/searcher/pagination"
+	relatedsearch "GoSearchEngine/searcher/relatedSearch"
+	"GoSearchEngine/searcher/sorts"
+	"GoSearchEngine/searcher/storage"
+	"GoSearchEngine/searcher/utils"
+	"GoSearchEngine/searcher/words"
 	"log"
 	"os"
 	"runtime"
@@ -27,10 +27,8 @@ type Engine struct {
 	invertedIndexStorages []*storage.LeveldbStorage //倒排索引, key=word, value=[]indexs
 	positiveIndexStorages []*storage.LeveldbStorage //正排索引, 一个文档id对应多个words
 	docStorages           []*storage.LeveldbStorage //文档仓
-
-	sync.Mutex //锁 互斥锁
-	//initWG                *sync.WaitGroup        //LevelDB初始化信号量机制
-	//IndexWG               *sync.WaitGroup        //索引处理信号量机制
+  
+	sync.Mutex                                   //锁 互斥锁
 	sync.WaitGroup                               //LevelDB初始化信号量机制
 	addDocumentWorkerChan []chan *model.IndexDoc //添加索引的通道
 	IsDebug               bool                   //是否调试模式
@@ -223,7 +221,7 @@ func (e *Engine) addInvertedIndex(word string, id uint32) {
 		utils.Decoder(buf, &ids)
 	}
 
-	// id自增？
+	// id自增
 	if !arrays.BinarySearch(ids, id) {
 		ids = append(ids, id)
 	}

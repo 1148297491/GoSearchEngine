@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"gofound/common"
-	"gofound/dto"
-	"gofound/middleware"
-	"gofound/models"
+	"GoSearchEngine/common"
+	"GoSearchEngine/dto"
+	"GoSearchEngine/middleware"
+	"GoSearchEngine/models"
 	"net/http"
 )
 

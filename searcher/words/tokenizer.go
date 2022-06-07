@@ -2,7 +2,7 @@ package words
 
 import (
 	"embed"
-	"gofound/searcher/utils"
+	"GoSearchEngine/searcher/utils"
 	"log"
 	"strings"
 

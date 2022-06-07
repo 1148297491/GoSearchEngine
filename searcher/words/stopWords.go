@@ -2,7 +2,7 @@ package words
 
 import (
 	"bufio"
-	"gofound/searcher/utils"
+	"GoSearchEngine/searcher/utils"
 	"io"
 	"log"
 	"os"

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"gofound/common"
-	"gofound/dto"
-	"gofound/models"
+	"GoSearchEngine/common"
+	"GoSearchEngine/dto"
+	"GoSearchEngine/models"
 	"net/http"
 )
 
