@@ -1,12 +1,13 @@
 package words
 
 import (
-	"bufio"
 	"GoSearchEngine/searcher/utils"
+	"bufio"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -14,14 +15,10 @@ var stopWordsSet utils.Set
 
 func init() {
 	log.Printf("###### 开始初始化去停用词表 ######")
-	currPtah, _ := os.Getwd()
-	var stopWordsFilePath string
+	_, fileStr, _, _ := runtime.Caller(0)
 
-	if strings.Contains(currPtah, "searcher") {
-		stopWordsFilePath = filepath.Join(currPtah, "words/data/stopWordsDict.txt")
-	} else {
-		stopWordsFilePath = filepath.Join(currPtah, "searcher/words/data/stopWordsDict.txt")
-	}
+	currPtah := filepath.Dir(fileStr)
+	var stopWordsFilePath = filepath.Join(currPtah, "/data/stopWordsDict.txt")
 
 	file, err := os.Open(stopWordsFilePath)
 	if err != nil {

@@ -8,7 +8,6 @@ require (
 	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/jinzhu/gorm v1.9.16
-	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46
 	github.com/shirou/gopsutil/v3 v3.22.4
 	github.com/spf13/viper v1.12.0
 	github.com/syndtr/goleveldb v1.0.0

@@ -1,7 +1,6 @@
 package searcher
 
 import (
-	"fmt"
 	"GoSearchEngine/searcher/arrays"
 	"GoSearchEngine/searcher/model"
 	"GoSearchEngine/searcher/pagination"
@@ -10,6 +9,8 @@ import (
 	"GoSearchEngine/searcher/storage"
 	"GoSearchEngine/searcher/utils"
 	"GoSearchEngine/searcher/words"
+	"fmt"
+
 	"log"
 	"os"
 	"runtime"
@@ -27,8 +28,10 @@ type Engine struct {
 	invertedIndexStorages []*storage.LeveldbStorage //倒排索引, key=word, value=[]indexs
 	positiveIndexStorages []*storage.LeveldbStorage //正排索引, 一个文档id对应多个words
 	docStorages           []*storage.LeveldbStorage //文档仓
-  
-	sync.Mutex                                   //锁 互斥锁
+
+	sync.Mutex            //锁 互斥锁
+	invertedMutexs        []sync.Mutex
+	positiveMutexs        []sync.Mutex
 	sync.WaitGroup                               //LevelDB初始化信号量机制
 	addDocumentWorkerChan []chan *model.IndexDoc //添加索引的通道
 	IsDebug               bool                   //是否调试模式
@@ -45,7 +48,7 @@ type Option struct {
 }
 
 const (
-	PreTag  = "<mark>" //定义返回结果高亮的前缀
+	PreTag  = "<mark>"  //定义返回结果高亮的前缀
 	PostTag = "</mark>" //定义返回结果高亮的后缀
 )
 
@@ -63,9 +66,14 @@ func (e *Engine) Init() {
 
 	log.Println("数据存储目录：", e.IndexPath) // 根据数据库相关文件存储位置
 
+	e.invertedMutexs = make([]sync.Mutex, e.Shard)
+	e.positiveMutexs = make([]sync.Mutex, e.Shard)
 	e.addDocumentWorkerChan = make([]chan *model.IndexDoc, e.Shard) // 文件指定分片数，没有指定则默认10
 	//初始化文件存储
 	for shard := 0; shard < e.Shard; shard++ {
+		// 初始化互斥锁
+		e.invertedMutexs[shard] = sync.Mutex{}
+		e.positiveMutexs[shard] = sync.Mutex{}
 
 		//初始化chan
 		worker := make(chan *model.IndexDoc, 1000)
@@ -193,20 +201,21 @@ func (e *Engine) AddDocument(index *model.IndexDoc) {
 		return
 	}
 
-	for _, word := range splitWords {
-		e.addInvertedIndex(word, id)
-	}
-
 	//添加id索引
-	e.addPositiveIndex(index, splitWords)
+	go e.addPositiveIndex(index, splitWords)
+
+	for _, word := range splitWords {
+		go e.addInvertedIndex(word, id)
+	}
 }
 
 // 添加倒排索引
 func (e *Engine) addInvertedIndex(word string, id uint32) {
-	e.Lock()
-	defer e.Unlock()
-
+	// e.Lock()
+	// defer e.Unlock()
 	shard := e.getShardByWord(word)
+	e.invertedMutexs[shard].Lock()
+	defer e.invertedMutexs[shard].Unlock()
 
 	s := e.invertedIndexStorages[shard]
 
@@ -221,7 +230,7 @@ func (e *Engine) addInvertedIndex(word string, id uint32) {
 		utils.Decoder(buf, &ids)
 	}
 
-	// id自增
+	// id自增？
 	if !arrays.BinarySearch(ids, id) {
 		ids = append(ids, id)
 	}
@@ -232,8 +241,8 @@ func (e *Engine) addInvertedIndex(word string, id uint32) {
 //	移除没有的词
 func (e *Engine) optimizeIndex(id uint32, newWords []string) bool {
 	//判断id是否存在
-	e.Lock()
-	defer e.Unlock()
+	// e.Lock()
+	// defer e.Unlock()
 
 	//计算差值
 	removes, found := e.getDifference(id, newWords)
@@ -281,8 +290,12 @@ func (e *Engine) removeIdInWordIndex(id uint32, word string) {
 
 // 计算差值
 func (e *Engine) getDifference(id uint32, newWords []string) ([]string, bool) {
-
 	shard := e.getShard(id)
+
+	// 分片上锁
+	e.positiveMutexs[shard].Lock()
+	defer e.positiveMutexs[shard].Unlock()
+
 	wordStorage := e.positiveIndexStorages[shard]
 	key := utils.Uint32ToBytes(id)
 	buf, found := wordStorage.Get(key)
@@ -308,11 +321,16 @@ func (e *Engine) getDifference(id uint32, newWords []string) ([]string, bool) {
 
 // 添加正排索引,以及文档数据 id=>keys id=>doc
 func (e *Engine) addPositiveIndex(index *model.IndexDoc, keys []string) {
-	e.Lock()
-	defer e.Unlock()
+	// e.Lock()
+	// defer e.Unlock()
 
 	indexByte := utils.Uint32ToBytes(index.Id)
 	shard := e.getShard(index.Id)
+
+	// 分片上锁
+	e.positiveMutexs[shard].Lock()
+	defer e.positiveMutexs[shard].Unlock()
+
 	docStorage := e.docStorages[shard]
 
 	//添加正排索引

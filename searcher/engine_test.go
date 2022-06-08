@@ -1,10 +1,10 @@
 package searcher
 
 import (
-	"encoding/csv"
-	"fmt"
 	"GoSearchEngine/searcher/model"
 	"GoSearchEngine/searcher/words"
+	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
 	"os"
